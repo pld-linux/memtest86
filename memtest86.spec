@@ -7,7 +7,7 @@ Version:	3.0
 Release:	1
 License:	GPL
 Group:		Applications/System
-Source0:	http://www.teresaudio.com/%{name}/%{name}-%{version}.tar.gz
+Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
 Patch0:		%{name}-vars.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}

@@ -1,3 +1,33 @@
+--- memtest86-3.0/head.S	2002-04-22 05:22:03 +0000
++++ memtest86-3.0_my_amd/head.S	2003-10-24 14:31:38 +0000
+@@ -23,6 +23,7 @@
+ #define X86		0
+ #define X86_MODEL	1
+ #define X86_MASK	2
++#define X86_BRAND	3
+ #define X86_CPUID	4
+ #define X86_CAPABILITY	8
+ #define X86_VENDOR_ID	12
+@@ -335,6 +336,7 @@
+ 	movb	%al, X86_MODEL(%esi)
+ 	andb	$0x0f, %cl		# mask mask revision
+ 	movb	%cl, X86_MASK(%esi)
++	movb	%bl, X86_BRAND(%esi)	# brand id -- used only for Intel CPU
+ 	movl	%edx, X86_CAPABILITY(%esi)
+ 
+ 	movl	$0, X86_CACHE(%esi)
+@@ -356,8 +358,10 @@
+ not_intel:
+ 	movl	X86_VENDOR_ID+8(%esi),%eax
+ 	cmpl	$0x444d4163, %eax	# Is this an AMD CPU?
++	je	amd_viac3
++	cmpl	$0x736c7561, %eax	# Is this an VIA C3 CPU?
+ 	jne	not_amd
+-
++amd_viac3:
+ 	movl	$0x80000005, %eax	# Use the CPUID instruction to get cache info 
+ 	cpuid
+ 	movl	%ecx, X86_CACHE(%esi)
 --- memtest86-3.1a/init.c	2004-03-11 17:57:45.000000000 +0100
 +++ memtest86-3.1a.mod/init.c	2004-04-14 12:34:08.903695715 +0200
 @@ -256,6 +256,8 @@

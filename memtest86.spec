@@ -4,12 +4,12 @@ Summary(pt_BR):	Testador de memСria completo e independente para sistemas i386
 Summary(ru_RU):	Тест памяти для x86-архитектуры
 Summary(uk_UA):	Тест пам'ят╕ для x86-арх╕тектури
 Name:		memtest86
-Version:	3.0
-Release:	2
+Version:	3.1a
+Release:	1
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
-# Source0-md5:	fade21758538a5468ad9b8509edfde0d
+# Source0-md5:	6c43d4aba3fdfa135c462a02b3ae5b39
 Patch0:		%{name}-vars.patch
 Patch1:		%{name}-rover-centrino+c3+amd.patch
 Patch2:		%{name}-i686-ld.patch
@@ -57,10 +57,10 @@ Memtest86 -- ретельний та самост╕йний тест пам'ят╕ для x86-систем. В╕н
 тест-дискети.
 
 %prep
-%setup -q -n %{name}-%(echo %{version} | tr -d [:alpha:])
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
+%setup -q 
+#%patch0 -p1
+#%patch1 -p1
+#%patch2 -p1
 
 %build
 %{__make} \

@@ -35,7 +35,7 @@ memtest86.
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT/boot
 
-%{__install} memtest.bin $RPM_BUILD_ROOT/boot/memtest86
+install memtest.bin $RPM_BUILD_ROOT/boot/memtest86
 
 gzip -9nf README
 

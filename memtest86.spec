@@ -7,6 +7,7 @@ Release:	1
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
+# Source0-md5:	fade21758538a5468ad9b8509edfde0d
 Patch0:		%{name}-vars.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}

@@ -5,8 +5,6 @@ Version:	2.8a
 Release:	1
 License:	GPL
 Group:		Applications/System
-Group(de):	Applikationen/System
-Group(pl):	Aplikacje/System
 Source0:	http://www.teresaudio.com/%{name}/%{name}-%{version}.tar.gz
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}

@@ -10,9 +10,8 @@ License:	GPL
 Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
 # Source0-md5:	6c43d4aba3fdfa135c462a02b3ae5b39
-Patch0:		%{name}-vars.patch
-Patch1:		%{name}-rover-centrino+c3+amd.patch
-Patch2:		%{name}-i686-ld.patch
+Patch0:		%{name}-rover-centrino+c3+amd.patch
+Patch1:		%{name}-i686-ld.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -58,9 +57,8 @@ Memtest86 -- ретельний та самост╕йний тест пам'ят╕ для x86-систем. В╕н
 
 %prep
 %setup -q 
-#%patch0 -p1
+%patch0 -p1
 %patch1 -p1
-%patch2 -p1
 
 %build
 %{__make} \

@@ -423,3 +423,15 @@
  	dst = src + len;
  	wlen = len / 4;  /* Length is bytes */
  
+diff -Naur memtest86-3.1a/test.h memtest86-3.1a.mt/test.h
+--- memtest86-3.1a/test.h	2004-03-11 17:56:32.000000000 +0100
++++ memtest86-3.1a.mt/test.h	2004-04-14 13:00:24.963956493 +0200
+@@ -229,7 +229,7 @@
+ 	char type;
+ 	char model;
+ 	char step;
+-	char fill;
++	char brand;
+ 	long cpuid;
+ 	long capability;
+ 	char vend_id[12];

@@ -1,4 +1,3 @@
-
 Summary:	A memory tester
 Summary(pl):	Tester pamiêci
 Name:		memtest86

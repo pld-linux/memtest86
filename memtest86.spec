@@ -1,6 +1,8 @@
 Summary:	Thorough, stand alone memory test for i386 systems
 Summary(pl):	Kompleksowy, niezale©ny od OS tester pamiЙci dla systemСw i386
 Summary(pt_BR):	Testador de memСria completo e independente para sistemas i386
+Summary(ru_RU):	Тест памяти для x86-архитектуры
+Summary(uk_UA):	Тест пам'ят╕ для x86-арх╕тектури
 Name:		memtest86
 Version:	3.0
 Release:	2
@@ -9,6 +11,7 @@ Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
 # Source0-md5:	fade21758538a5468ad9b8509edfde0d
 Patch0:		%{name}-vars.patch
+Patch1:		%{name}-rover-centrino+c3+amd.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -28,9 +31,34 @@ memtest86.
 Memtest86 И um testador de memСria independente (no sentido de que nЦo
 roda sob um sistema operacional) e completo para sistemas i386.
 
+%description -l ru_RU
+Memtest86 -- тщательный и самостоятельный тест памяти для x86-систем. Он может
+быть загружен или с жесткого диска при помощи LILO/GRUB, или с дискеты.
+
+Тест использует алгоритм "движущихся инверсий", доказавший свою эффективность
+при обнаружении сбоев памяти. Не обращайте внимания на "тест" BIOS -- он
+практически ничего не значит, так как пропустит много ошибок из тех, которые
+обнаружит memtest86.
+
+Также может использоваться для создания загрузочной тест-дискеты.
+
+%description -l uk_UA
+Memtest86 -- ретельний та самост╕йний тест пам'ят╕ для x86-систем. В╕н
+може бути завантажений як з жорсткого диску за допомогою LILO/GRUB, так
+╕ з дискети.
+
+Тест використову╓ алгоритм "рухаючихся ╕нверс╕й", який дов╕в свою
+ефективн╕сть при визначенн╕ негаразд╕в ╕з пам'яттю. Не звертайте уваги
+на "тест" BIOS -- в╕н практично н╕чого не означа╓, тому що пройде повз
+багатьох збо╖в з тих, що знаходить memtest86.
+
+Також може використовуватися для створення завантажувально╖
+тест-дискети.
+
 %prep
 %setup -q -n %{name}-%(echo %{version} | tr -d [:alpha:])
 %patch0 -p1
+%patch1 -p1
 
 %build
 %{__make} CC="%{__cc}" CCFLAGS="%{rpmcflags} -fomit-frame-pointer -fno-builtin" SHELL=/bin/sh

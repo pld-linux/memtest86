@@ -12,6 +12,7 @@ Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
 # Source0-md5:	fade21758538a5468ad9b8509edfde0d
 Patch0:		%{name}-vars.patch
 Patch1:		%{name}-rover-centrino+c3+amd.patch
+Patch2:		%{name}-i686-ld.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -59,9 +60,13 @@ Memtest86 -- ретельний та самост╕йний тест пам'ят╕ для x86-систем. В╕н
 %setup -q -n %{name}-%(echo %{version} | tr -d [:alpha:])
 %patch0 -p1
 %patch1 -p1
+%patch2 -p1
 
 %build
-%{__make} CC="%{__cc}" CCFLAGS="%{rpmcflags} -fomit-frame-pointer -fno-builtin" SHELL=/bin/sh
+%{__make} \
+	CC="%{__cc}" \
+	CCFLAGS="%{rpmcflags} -fomit-frame-pointer -fno-builtin" \
+	SHELL=/bin/sh
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -69,10 +74,10 @@ install -d $RPM_BUILD_ROOT/boot
 
 install memtest.bin $RPM_BUILD_ROOT/boot/memtest86
 
+%clean
+rm -rf $RPM_BUILD_ROOT
+
 %files
 %defattr(644,root,root,755)
 %doc README
 /boot/memtest86
-
-%clean
-rm -rf $RPM_BUILD_ROOT

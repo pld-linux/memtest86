@@ -1,7 +1,8 @@
+
 Summary:	A memory tester
 Summary(pl):	Tester pamiêci
 Name:		memtest86
-Version:	2.7
+Version:	2.8a
 Release:	1
 License:	GPL
 Group:		Applications/System
@@ -24,7 +25,7 @@ sprawdzeniem i zazwyczaj nie wykrywaj± b³êdów znajdywanych przez
 memtest86.
 
 %prep
-%setup -q
+%setup -q -n %{name}-%(echo %{version} | tr -d [:alpha:])
 
 %build
 %{__make} CCFLAGS="%{rpmcflags}" SHELL=/bin/bash

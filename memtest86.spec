@@ -8,13 +8,10 @@ Release:	1
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.teresaudio.com/%{name}/%{name}-%{version}.tar.gz
+Patch0:		%{name}-vars.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
-
-%if ! %(%{__cc} -dumpversion | grep -q '^3\.0' ; echo $?)
-%define		optflags	-O
-%endif
 
 %description
 Memtest86 is thorough, stand alone memory test for i386 architecture
@@ -37,9 +34,10 @@ roda sob um sistema operacional) e completo para sistemas i386.
 
 %prep
 %setup -q -n %{name}-%(echo %{version} | tr -d [:alpha:])
+%patch0 -p1
 
 %build
-%{__make} CC="%{__cc}" CCFLAGS="%{rpmcflags}" SHELL=/bin/bash
+%{__make} CC="%{__cc}" CCFLAGS="%{rpmcflags} -fomit-frame-pointer -fno-builtin" SHELL=/bin/sh
 
 %install
 rm -rf $RPM_BUILD_ROOT

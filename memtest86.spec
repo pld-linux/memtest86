@@ -10,7 +10,7 @@ URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-%if ! %(%{__cc} --version | grep -q '^3\.0' ; echo $?)
+%if ! %(%{__cc} -dumpversion | grep -q '^3\.0' ; echo $?)
 %define		optflags	-O
 %endif
 

@@ -1,0 +1,66 @@
+--- memtest86-3.0/config.c~	Tue May 21 20:27:11 2002
++++ memtest86-3.0/config.c	Sun May 26 22:18:38 2002
+@@ -10,7 +10,7 @@
+ 
+ extern int bail;
+ extern struct tseq tseq[];
+-extern struct vars *v;
++extern struct vars * const v;
+ extern short e820_nr;
+ extern char memsz_mode;
+ 
+--- memtest86-3.0/test.c~	Sun May 26 22:16:13 2002
++++ memtest86-3.0/test.c	Sun May 26 22:16:35 2002
+@@ -9,7 +9,7 @@
+ extern int segs, bail;
+ extern volatile ulong *p;
+ extern ulong p1, p2;
+-extern struct vars *v;
++extern struct vars * const v;
+ extern int test_ticks, nticks;
+ extern struct tseq tseq[];
+ void poll_errors();
+--- memtest86-3.0/lib.c~	Wed May 22 01:12:07 2002
++++ memtest86-3.0/lib.c	Sun May 26 22:17:04 2002
+@@ -9,7 +9,7 @@
+ #include "config.h"
+ #include "screen_buffer.h"
+ 
+-extern struct vars *v;
++extern struct vars * const v;
+ 
+ int slock = 0, lsr = 0;
+ short serial_cons = SERIAL_CONSOLE_DEFAULT;
+--- memtest86-3.0/Makefile~	Tue Apr 23 13:21:05 2002
++++ memtest86-3.0/Makefile	Sun May 26 22:19:33 2002
+@@ -12,7 +12,7 @@
+ #
+ # gcc compiler options, these settings should suffice
+ #
+-CCFLAGS=-Wall -march=i486 -O -fomit-frame-pointer -fno-builtin
++CCFLAGS=-Wall -march=i486 -O2 -fomit-frame-pointer -fno-builtin
+ 
+ AS=as
+ 
+--- memtest86-3.0/patn.c~	Thu Oct 18 01:30:32 2001
++++ memtest86-3.0/patn.c	Sun May 26 22:18:28 2002
+@@ -18,7 +18,7 @@
+ #define DEFAULT_MASK ((~0L) << 2)
+ 
+ 
+-extern struct vars *v;
++extern struct vars * const v;
+ 
+ 
+ /* What it does:
+--- memtest86-3.0/init.c~	Wed May 22 00:52:37 2002
++++ memtest86-3.0/init.c	Sun May 26 22:16:49 2002
+@@ -11,7 +11,7 @@
+ #include "pci.h"
+ #include "io.h"
+ 
+-extern struct vars *v;
++extern struct vars * const v;
+ extern short memsz_mode;
+ extern short firmware;
+ 

@@ -16,21 +16,9 @@
  	movl	%edx, X86_CAPABILITY(%esi)
  
  	movl	$0, X86_CACHE(%esi)
-@@ -356,8 +358,10 @@
- not_intel:
- 	movl	X86_VENDOR_ID+8(%esi),%eax
- 	cmpl	$0x444d4163, %eax	# Is this an AMD CPU?
-+	je	amd_viac3
-+	cmpl	$0x736c7561, %eax	# Is this an VIA C3 CPU?
- 	jne	not_amd
--
-+amd_viac3:
- 	movl	$0x80000005, %eax	# Use the CPUID instruction to get cache info 
- 	cpuid
- 	movl	%ecx, X86_CACHE(%esi)
---- memtest86-3.1a/init.c	2004-03-11 17:57:45.000000000 +0100
-+++ memtest86-3.1a.mod/init.c	2004-04-14 12:34:08.903695715 +0200
-@@ -256,6 +256,8 @@
+--- memtest86-3.2/init.c.orig	2004-11-09 20:57:44.000000000 +0100
++++ memtest86-3.2/init.c	2004-12-16 15:07:32.000000000 +0100
+@@ -261,6 +261,8 @@
  {
  	int i, off=0;
  	int l1_cache=0, l2_cache=0;
@@ -39,7 +27,7 @@
  	ulong speed;
  
  	v->rdtsc = 0;
-@@ -344,30 +346,35 @@
+@@ -352,30 +354,35 @@
  		case 5:
  			switch(cpu_id.model) {
  			case 0:
@@ -81,7 +69,7 @@
  				l2_cache = (cpu_id.cache_info[11] << 8);
  				l2_cache += cpu_id.cache_info[10];
  				break;
-@@ -375,8 +382,8 @@
+@@ -391,8 +398,8 @@
  			break;
  		case 6:
  			/* Get L1 & L2 cache sizes */
@@ -92,7 +80,7 @@
  			l2_cache = (cpu_id.cache_info[11] << 8);
  			l2_cache += cpu_id.cache_info[10];
  
-@@ -473,26 +480,40 @@
+@@ -510,29 +517,41 @@
  		}
  
  		/* Get the cache info */
@@ -121,16 +109,17 @@
 +				break;
  			case 0xc:
  			case 0x67:
+ 			case 0x60:
 -				l1_cache += 16;
 +				l1_data += 16;
-+				break;
-+			case 0x30:
-+				l1_code += 32;
  				break;
-+			case 0x2C:
  			case 0x68:
--				l1_cache += 32;
+ 			case 0x2c:
 +				l1_data += 32;
++				break;
+ 			case 0x30:
+-				l1_cache += 32;
++				l1_code += 32;
  				break;
  			case 0x40:
 -				l2_cache = 0;
@@ -138,25 +127,15 @@
  				break;
  			case 0x41:
  			case 0x79:
-@@ -506,22 +527,25 @@
- 			case 0x43:
- 			case 0x7b:
- 			case 0x83:
-+			case 0x86:
+@@ -553,6 +572,7 @@
  				l2_cache = 512;
  				break;
  			case 0x44:
 +			case 0x78:
  			case 0x7c:
  			case 0x84:
-+			case 0x87:
- 				l2_cache = 1024;
- 				break;
- 			case 0x45:
-+			case 0x7D:
- 			case 0x85:
- 				l2_cache = 2048;
- 				break;
+ 			case 0x87:
+@@ -566,8 +586,7 @@
  			}
  		}
  
@@ -166,7 +145,7 @@
  			switch(cpu_id.model) {
  			case 0:
  			case 1:
-@@ -529,7 +553,7 @@
+@@ -575,7 +594,7 @@
  			case 3:
  			case 7:
  				cprint(LINE_CPU, 0, "Pentium");
@@ -175,7 +154,7 @@
  					l1_cache = 8;
  				}
  				off = 7;
-@@ -537,70 +561,151 @@
+@@ -583,140 +602,215 @@
  			case 4:
  			case 8:
  				cprint(LINE_CPU, 0, "Pentium-MMX");
@@ -193,6 +172,11 @@
 -			case 1:
 -				cprint(LINE_CPU, 0, "Pentium Pro");
 -				off = 11;
+-				break;
+-			case 3:
+-			case 4:
+-				cprint(LINE_CPU, 0, "Pentium II");
+-				off = 10;
 +		} else {
 +			/* AL: if Intel CPU brand id (bl) is known -- use it */
 +			switch(cpu_id.brand) {
@@ -201,16 +185,21 @@
 +				cprint(LINE_CPU, 0, "Celeron");
 +				off = 7;
  				break;
--			case 3:
--				cprint(LINE_CPU, 0, "Pentium II");
--				off = 10;
+-			case 5:
+-				if (l2_cache == 0) {
+-					cprint(LINE_CPU, 0, "Celeron");
+-					off = 7;
+-				} else {
+-					cprint(LINE_CPU, 0, "Pentium II");
+-					off = 10;
+-				}
 +			case 0x02:
 +			case 0x04:
 +				cprint(LINE_CPU, 0, "Pentium III");
 +				off = 11;
  				break;
--			case 5:
--				if (l2_cache == 0) {
+-			case 6:
+-				if (l2_cache == 128) {
 +			case 0x03:
 +				if (cpu_id.type  == 6
 +				 && cpu_id.model == 0xB
@@ -218,68 +207,132 @@
  					cprint(LINE_CPU, 0, "Celeron");
  					off = 7;
  				} else {
+-				    if (cpu_id.step == 0 || cpu_id.step == 5) {
+-					cprint(LINE_CPU, 0, "Celeron-A");
+-					off = 9;
+-				    } else {
 -					cprint(LINE_CPU, 0, "Pentium II");
 -					off = 10;
+-				    }
 +					cprint(LINE_CPU, 0, "Pentium III Xeon");
 +					off = 16;
- 				}
- 				break;
--			case 6:
--				if (l2_cache == 128) {
--					cprint(LINE_CPU, 0, "Celeron");
-+			case 0x06:
-+				cprint(LINE_CPU, 0, "Mobile Pentium III");
-+				off = 18;
-+				break;
-+			case 0x07:
-+			case 0x0F:
-+			case 0x13:
-+				cprint(LINE_CPU, 0, "Mobile Celeron");
-+				off = 14;
-+				break;
-+			case 0x08:
-+			case 0x09:
-+				cprint(LINE_CPU, 0, "Pentium 4");
-+				off = 9;
-+				break;
-+			case 0x0B:
-+				if (cpu_id.type  == 0xF
-+				 && cpu_id.model == 1
-+				 && cpu_id.step  == 3) {
-+					cprint(LINE_CPU, 0, "Xeon MP");
- 					off = 7;
- 				} else {
--					cprint(LINE_CPU, 0, "Pentium II");
--					off = 10;
-+					cprint(LINE_CPU, 0, "Xeon");
-+					off = 4;
  				}
  				break;
 -			case 7:
 -			case 8:
 -			case 10:
 -			case 11:
--				cprint(LINE_CPU, 0, "Pentium III");
--				off = 11;
+-				if (l2_cache == 128) {
+-					cprint(LINE_CPU, 0, "Celeron");
+-					off = 7;
+-				} else {
+-					cprint(LINE_CPU, 0, "Pentium III");
+-					off = 11;
+-				}
++			case 0x06:
++				cprint(LINE_CPU, 0, "Mobile Pentium III");
++				off = 18;
+ 				break;
+-			case 9:
+-				if (l2_cache == 512) {
+-					cprint(LINE_CPU, 0, "Celeron M (0.13)");
+-				} else {
+-					cprint(LINE_CPU, 0, "Pentium M (0.13)");
+-				}
+-				off = 16;
++			case 0x07:
++			case 0x0F:
++			case 0x13:
++				cprint(LINE_CPU, 0, "Mobile Celeron");
++				off = 14;
+ 				break;
+-			case 13:
+-				if (l2_cache == 512) {
+-					cprint(LINE_CPU, 0, "Celeron M (0.09)");
+-				} else {
+-					cprint(LINE_CPU, 0, "Pentium M (0.09)");
+-				}
+-				off = 16;
++			case 0x08:
++			case 0x09:
++				cprint(LINE_CPU, 0, "Pentium 4");
++				off = 9;
+ 				break;
+-			}
+-			break;
+-		case 15:
+-			switch(cpu_id.model) {
+-			case 0:
+-			case 1:			
+-				if (l2_cache == 128) {
+-					cprint(LINE_CPU, 0, "Celeron (0.18)");
+-					off = 14;	
+-				} else if (cpu_id.pwrcap == 0x0B) {
+-					cprint(LINE_CPU, 0, "Xeon DP (0.18)");
+-					off = 14;
+-				} else if (cpu_id.pwrcap == 0x0C) {
+-					cprint(LINE_CPU, 0, "Xeon MP (0.18)");
+-					off = 14;
++			case 0x0B:
++				if (cpu_id.type  == 0xF
++				 && cpu_id.model == 1
++				 && cpu_id.step  == 3) {
++					cprint(LINE_CPU, 0, "Xeon MP");
++					off = 7;
+ 				} else {
+-					cprint(LINE_CPU, 0, "Pentium 4 (0.18)");
+-					off = 16;
++					cprint(LINE_CPU, 0, "Xeon");
++					off = 4;
+ 				}
+ 				break;
+-			case 2:
+-				if (l2_cache == 128) {
+-					cprint(LINE_CPU, 0, "Celeron (0.13)");
+-					off = 14;	
+-				} else if (cpu_id.pwrcap == 0x0B) {
+-					cprint(LINE_CPU, 0, "Xeon DP (0.13)");
+-					off = 14;
+-				} else if (cpu_id.pwrcap == 0x0C) {
+-					cprint(LINE_CPU, 0, "Xeon MP (0.13)");
+-					off = 14;
+-				} else {
+-					cprint(LINE_CPU, 0, "Pentium 4 (0.13)");
+-					off = 16;
+-				}
 +			case 0x0C:
 +				cprint(LINE_CPU, 0, "Xeon MP");
 +				off = 7;
-+				break;
+ 				break;
+-			case 3:
+-			case 4:
+-				if (l2_cache == 256) {
+-					cprint(LINE_CPU, 0, "Celeron (0.09)");
+-					off = 14;	
+-				} else if (cpu_id.pwrcap == 0x0B) {
+-					cprint(LINE_CPU, 0, "Xeon DP (0.09)");
+-					off = 14;
+-				} else if (cpu_id.pwrcap == 0x0C) {
+-					cprint(LINE_CPU, 0, "Xeon MP (0.09)");
+-					off = 14;
 +			case 0x0E:
 +				if (cpu_id.type  == 0xF
 +				 && cpu_id.model == 1
 +				 && cpu_id.step  == 3) {
 +					cprint(LINE_CPU, 0, "Xeon");
 +					off = 4;
-+				} else {
+ 				} else {
+-					cprint(LINE_CPU, 0, "Pentium 4 (0.09)");
 +					cprint(LINE_CPU, 0, "Mobile Pentium 4");
-+					off = 16;
-+				}
-+				break;
+ 					off = 16;
+ 				}
+ 				break;
+-			case 5:
+-				cprint(LINE_CPU, 0, "Pentium 4");
 +			case 0x16:
 +				cprint(LINE_CPU, 0, "Pentium M");
-+				off = 9;
-+				break;
+ 				off = 9;
+ 				break;
 +			/* AL: if unknown Intel CPU brand id -- drop to old code */
 +			default:
 +				if (cpu_id.type == 6) {
@@ -290,6 +343,7 @@
 +						off = 11;
 +						break;
 +					case 3:
++					case 4:
 +						cprint(LINE_CPU, 0, "Pentium II");
 +						off = 10;
 +						break;
@@ -307,69 +361,120 @@
 +							cprint(LINE_CPU, 0, "Celeron");
 +							off = 7;
 +						} else {
++						    if (cpu_id.step == 0 || cpu_id.step == 5) {
++							cprint(LINE_CPU, 0, "Celeron-A");
++							off = 9;
++						    } else {
 +							cprint(LINE_CPU, 0, "Pentium II");
 +							off = 10;
++						    }
 +						}
 +						break;
 +					case 7:
 +					case 8:
 +					case 10:
 +					case 11:
-+						cprint(LINE_CPU, 0, "Pentium III");
-+						off = 11;
++						if (l2_cache == 128) {
++							cprint(LINE_CPU, 0, "Celeron");
++							off = 7;
++						} else {
++							cprint(LINE_CPU, 0, "Pentium III");
++							off = 11;
++						}
++						break;
++					case 9:
++						if (l2_cache == 512) {
++							cprint(LINE_CPU, 0, "Celeron M (0.13)");
++						} else {
++							cprint(LINE_CPU, 0, "Pentium M (0.13)");
++						}
++						off = 16;
++						break;
++					case 13:
++						if (l2_cache == 512) {
++							cprint(LINE_CPU, 0, "Celeron M (0.09)");
++						} else {
++							cprint(LINE_CPU, 0, "Pentium M (0.09)");
++						}
++						off = 16;
 +						break;
 +					}
 +				} else if (cpu_id.type == 15) {
-+					cprint(LINE_CPU, 0, "Pentium 4");
-+					off = 9;
++					switch(cpu_id.model) {
++					case 0:
++					case 1:			
++						if (l2_cache == 128) {
++							cprint(LINE_CPU, 0, "Celeron (0.18)");
++							off = 14;	
++						} else if (cpu_id.pwrcap == 0x0B) {
++							cprint(LINE_CPU, 0, "Xeon DP (0.18)");
++							off = 14;
++						} else if (cpu_id.pwrcap == 0x0C) {
++							cprint(LINE_CPU, 0, "Xeon MP (0.18)");
++							off = 14;
++						} else {
++							cprint(LINE_CPU, 0, "Pentium 4 (0.18)");
++							off = 16;
++						}
++						break;
++					case 2:
++						if (l2_cache == 128) {
++							cprint(LINE_CPU, 0, "Celeron (0.13)");
++							off = 14;	
++						} else if (cpu_id.pwrcap == 0x0B) {
++							cprint(LINE_CPU, 0, "Xeon DP (0.13)");
++							off = 14;
++						} else if (cpu_id.pwrcap == 0x0C) {
++							cprint(LINE_CPU, 0, "Xeon MP (0.13)");
++							off = 14;
++						} else {
++							cprint(LINE_CPU, 0, "Pentium 4 (0.13)");
++							off = 16;
++						}
++						break;
++					case 3:
++					case 4:
++						if (l2_cache == 256) {
++							cprint(LINE_CPU, 0, "Celeron (0.09)");
++							off = 14;	
++						} else if (cpu_id.pwrcap == 0x0B) {
++							cprint(LINE_CPU, 0, "Xeon DP (0.09)");
++							off = 14;
++						} else if (cpu_id.pwrcap == 0x0C) {
++							cprint(LINE_CPU, 0, "Xeon MP (0.09)");
++							off = 14;
++						} else {
++							cprint(LINE_CPU, 0, "Pentium 4 (0.09)");
++							off = 16;
++						}
++						break;
++					case 5:
++						cprint(LINE_CPU, 0, "Pentium 4");
++						off = 9;
++						break;
++					}
 +				}
- 				break;
++				break;
  			}
 -			break;
--		case 15:
--			cprint(LINE_CPU, 0, "Pentium 4");
--			off = 9;
+-
  		}
  		break;
  
--	/* Cyrix Processors with CPUID */
-+	/* Cyrix Processors with CPUID or VIA C3 Processors */
+ 	/* Cyrix Processors with CPUID */
  	case 'C':
--		switch(cpu_id.model) {
--		case 0:
--			cprint(LINE_CPU, 0, "Cyrix 6x86MX/MII");
--			off = 16;
--			break;
--		case 4:
--			cprint(LINE_CPU, 0, "Cyrix GXm");
--			off = 9;
--			break;
-+		if (cpu_id.vend_id[1] == 'e') {
-+			cprint(LINE_CPU, 0, "VIA C3");
-+			off = 6;
+-
++		if (cpu_id.vend_id[1] == 'e') { /* VIA C3 */
 +			l1_data = cpu_id.cache_info[3];
 +			l1_code = cpu_id.cache_info[7];
 +			l2_cache = (cpu_id.cache_info[11] << 8);
 +			l2_cache += cpu_id.cache_info[10];
-+		} else {
-+			switch(cpu_id.model) {
-+			case 0:
-+				cprint(LINE_CPU, 0, "Cyrix 6x86MX/MII");
-+				off = 16;
-+				break;
-+			case 4:
-+				cprint(LINE_CPU, 0, "Cyrix GXm");
-+				off = 9;
-+				break;
-+			}
-+			return;
- 		}
--		return;
- 		break;
- 
- 	/* Unknown processor */
-@@ -633,14 +738,24 @@
- 		}
++		}
+ 		switch(cpu_id.type) {
+ 		case 6: // VIA C3
+ 			switch(cpu_id.model) {
+@@ -792,14 +886,25 @@
+ 		extclock = speed;
  	}
  
 +	/* AL: Use half of L1 cache size for L1 code and L1 data size, */
@@ -388,16 +493,16 @@
 +	/* To measure L1 cache speed we use a block size that is 1/2nd */
 +	/* of the L1 data cache size -1k */
  	if (l1_cache) {
- 		cprint(LINE_CPU+1, 9, "     K     ");
- 		dprint(LINE_CPU+1, 10, l1_cache, 4, 0);
--		if ((speed=memspeed((ulong)mapping(0x100),
+ 		cprint(LINE_CPU+1, 10, "     K     ");
+ 		dprint(LINE_CPU+1, 11, l1_cache, 3, 0);
++		if ((i = l1_data / 2)) i--;
+ 		if ((speed=memspeed((ulong)mapping(0x100),
 -				(l1_cache / 4) * 1024, 50))) {
-+		if ((i = l1_data / 2))  i--;
-+		if ((speed=memspeed((ulong)mapping(0x100), i*1024, 500))) {
++				i * 1024, 50))) {
  			cprint(LINE_CPU+1, 15, "      MB/s");
  			dprint(LINE_CPU+1, 15, speed, 6, 0);
  		}
-@@ -648,18 +763,23 @@
+@@ -807,18 +912,23 @@
  
  	/* Print out L2 cache info */
  	/* We measure the L2 cache speed by using a block size that is */
@@ -412,7 +517,7 @@
 +			total2 += l1_data;
 +		}
  		cprint(LINE_CPU+2, 9, "     K     ");
- 		cprint(LINE_CPU+2, 0, "L2 Cache    ?K");
+ 		cprint(LINE_CPU+2, 0, "L2 Cache:    ?K");
  		dprint(LINE_CPU+2, 10, l2_cache, 4, 0);
  
 -		if (l2_cache < l1_cache) {
@@ -427,7 +532,7 @@
  		if ((speed=memspeed((ulong)mapping(0x100), i*1024, 50))) {
  			cprint(LINE_CPU+2, 15, "      MB/s");
  			dprint(LINE_CPU+2, 15, speed, 6, 0);
-@@ -667,8 +787,12 @@
+@@ -826,8 +936,12 @@
  	}
  
  	/* Determine memory speed.  To find the memory spped we use */
@@ -442,7 +547,7 @@
  
  	/* Make sure that we have enough memory to do the test */
  	if ((1 + (i * 2)) > (v->plim_upper << 2)) {
-@@ -772,6 +896,10 @@
+@@ -931,6 +1045,10 @@
  	ulong wlen;
  	int i;
  

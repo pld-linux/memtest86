@@ -2,13 +2,17 @@ Summary:	A memory tester
 Summary(pl):	Tester pamiêci
 Name:		memtest86
 Version:	2.9
-Release:	1
+Release:	2
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.teresaudio.com/%{name}/%{name}-%{version}.tar.gz
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
+
+%if ! %(%{__cc} --version | grep -q '^3\.0' ; echo $?)
+%define		optflags	-O
+%endif
 
 %description
 Memtest86 is thorough, stand alone memory test for i386 architecture
@@ -25,7 +29,7 @@ memtest86.
 %setup -q -n %{name}-%(echo %{version} | tr -d [:alpha:])
 
 %build
-%{__make} CCFLAGS="%{rpmcflags} -O" SHELL=/bin/bash
+%{__make} CC="%{__cc}" CCFLAGS="%{rpmcflags}" SHELL=/bin/bash
 
 %install
 rm -rf $RPM_BUILD_ROOT

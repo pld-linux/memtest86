@@ -1,0 +1,493 @@
+diff -Naur memtest86-3.0/head.S memtest86-3.0_my_amd/head.S
+--- memtest86-3.0/head.S	2002-04-22 05:22:03 +0000
++++ memtest86-3.0_my_amd/head.S	2003-10-24 14:31:38 +0000
+@@ -23,6 +23,7 @@
+ #define X86		0
+ #define X86_MODEL	1
+ #define X86_MASK	2
++#define X86_BRAND	3
+ #define X86_CPUID	4
+ #define X86_CAPABILITY	8
+ #define X86_VENDOR_ID	12
+@@ -335,6 +336,7 @@
+ 	movb	%al, X86_MODEL(%esi)
+ 	andb	$0x0f, %cl		# mask mask revision
+ 	movb	%cl, X86_MASK(%esi)
++	movb	%bl, X86_BRAND(%esi)	# brand id -- used only for Intel CPU
+ 	movl	%edx, X86_CAPABILITY(%esi)
+ 
+ 	movl	$0, X86_CACHE(%esi)
+@@ -356,8 +358,10 @@
+ not_intel:
+ 	movl	X86_VENDOR_ID+8(%esi),%eax
+ 	cmpl	$0x444d4163, %eax	# Is this an AMD CPU?
++	je	amd_viac3
++	cmpl	$0x736c7561, %eax	# Is this an VIA C3 CPU?
+ 	jne	not_amd
+-
++amd_viac3:
+ 	movl	$0x80000005, %eax	# Use the CPUID instruction to get cache info 
+ 	cpuid
+ 	movl	%ecx, X86_CACHE(%esi)
+diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
+--- memtest86-3.0/init.c	2002-05-21 22:52:37 +0000
++++ memtest86-3.0_my_amd/init.c	2003-10-24 14:31:38 +0000
+@@ -257,6 +257,8 @@
+ {
+ 	int i, off=0;
+ 	int l1_cache=0, l2_cache=0;
++	/* AL: use code and data cache sizes separately, if known */
++	int l1_code=0, l1_data=0;
+ 	ulong speed;
+ 
+ 	v->rdtsc = 0;
+@@ -345,45 +347,53 @@
+ 		case 5:
+ 			switch(cpu_id.model) {
+ 			case 0:
++				cprint(LINE_CPU, 0, "AMD K5");
++				off = 6;
++				break;
+ 			case 1:
+ 			case 2:
+ 			case 3:
+ 				cprint(LINE_CPU, 0, "AMD K5");
+ 				off = 6;
++				l1_data = cpu_id.cache_info[3];
++				l1_code = cpu_id.cache_info[7];
+ 				break;
+ 			case 6:
+ 			case 7:
+ 				cprint(LINE_CPU, 0, "AMD K6");
+ 				off = 6;
+-				l1_cache = cpu_id.cache_info[3];
+-				l1_cache += cpu_id.cache_info[7];
++				l1_data = cpu_id.cache_info[3];
++				l1_code = cpu_id.cache_info[7];
+ 				break;
+ 			case 8:
+ 				cprint(LINE_CPU, 0, "AMD K6-2");
+ 				off = 8;
+-				l1_cache = cpu_id.cache_info[3];
+-				l1_cache += cpu_id.cache_info[7];
++				l1_data = cpu_id.cache_info[3];
++				l1_code = cpu_id.cache_info[7];
+ 				break;
+ 			case 9:
+ 				cprint(LINE_CPU, 0, "AMD K6-III");
+ 				off = 10;
+-				l1_cache = cpu_id.cache_info[3];
+-				l1_cache += cpu_id.cache_info[7];
++				l1_data = cpu_id.cache_info[3];
++				l1_code = cpu_id.cache_info[7];
+ 				l2_cache = (cpu_id.cache_info[11] << 8);
+ 				l2_cache += cpu_id.cache_info[10];
+ 				break;
+ 			}
+ 			break;
+ 		case 6:
++			l1_data = cpu_id.cache_info[3];
++			l1_code = cpu_id.cache_info[7];
++			l2_cache = (cpu_id.cache_info[11] << 8);
++			l2_cache += cpu_id.cache_info[10];
+ 			switch(cpu_id.model) {
+ 			case 1:
+ 			case 2:
+ 			case 4:
+ 			case 6:
++			case 8:
+ 				cprint(LINE_CPU, 0, "AMD Athlon");
+ 				off = 10;
+-				l2_cache = (cpu_id.cache_info[11] << 8);
+-				l2_cache += cpu_id.cache_info[10];
+ 				break;
+ 			case 3:
+ 			case 7:
+@@ -394,14 +404,9 @@
+ 				if (cpu_id.step == 0) { /* stepping 0 */
+ 					/* Hard code the right size */
+ 					l2_cache = 64;
+-				} else {
+-					l2_cache = (cpu_id.cache_info[11] << 8);
+-					l2_cache += cpu_id.cache_info[10];
+ 				}
+ 				break;
+ 			}
+-			l1_cache = cpu_id.cache_info[3];
+-			l1_cache += cpu_id.cache_info[7];
+ 		}
+ 		break;
+ 
+@@ -448,26 +453,40 @@
+ 		}
+ 
+ 		/* Get the cache info */
+-		for (i=0; i<16; i++) {
++		/* AL: scan from 1, because i==0 (al) -- not cache descriptor */
++		/* AL: TODO: if cache_info[0]>1, additional "cpuid 2"'s needed */
++		for (i=1; i<16; i++) {
+ #ifdef CPUID_DEBUG
+ 			dprint(12,i*3,cpu_id.cache_info[i],2,1);
+ #endif
++			/* AL: skip reserved registers (with bit 31 ==1) */
++			if (cpu_id.cache_info[i | 3] & 0x80)
++				continue;
++			else
+ 			switch(cpu_id.cache_info[i]) {
+ 			case 0x6:
++				l1_code += 8;
++				break;
+ 			case 0xa:
+ 			case 0x66:
+-				l1_cache += 8;
++				l1_data += 8;
+ 				break;
+ 			case 0x8:
++				l1_code += 16;
++				break;
+ 			case 0xc:
+ 			case 0x67:
+-				l1_cache += 16;
++				l1_data += 16;
++				break;
++			case 0x30:
++				l1_code += 32;
+ 				break;
++			case 0x2C:
+ 			case 0x68:
+-				l1_cache += 32;
++				l1_data += 32;
+ 				break;
+ 			case 0x40:
+-				l2_cache = 0;
++				/* l2_cache = 0; */  /* AL: not needed -- see CPUID descr. */
+ 				break;
+ 			case 0x41:
+ 			case 0x79:
+@@ -481,22 +500,25 @@
+ 			case 0x43:
+ 			case 0x7b:
+ 			case 0x83:
++			case 0x86:
+ 				l2_cache = 512;
+ 				break;
+ 			case 0x44:
++			case 0x78:
+ 			case 0x7c:
+ 			case 0x84:
++			case 0x87:
+ 				l2_cache = 1024;
+ 				break;
+ 			case 0x45:
++			case 0x7D:
+ 			case 0x85:
+ 				l2_cache = 2048;
+ 				break;
+ 			}
+ 		}
+ 
+-		switch(cpu_id.type) {
+-		case 5:
++		if (cpu_id.type == 5) {
+ 			switch(cpu_id.model) {
+ 			case 0:
+ 			case 1:
+@@ -504,7 +526,7 @@
+ 			case 3:
+ 			case 7:
+ 				cprint(LINE_CPU, 0, "Pentium");
+-				if (l1_cache == 0) {
++				if (l1_code == 0 && l1_data == 0) {
+ 					l1_cache = 8;
+ 				}
+ 				off = 7;
+@@ -512,70 +534,151 @@
+ 			case 4:
+ 			case 8:
+ 				cprint(LINE_CPU, 0, "Pentium-MMX");
+-				if (l1_cache == 0) {
++				if (l1_code == 0 && l1_data == 0) {
+ 					l1_cache = 16;
+ 				}
+ 				off = 11;
+ 				break;
+ 			}
+-			break;
+-		case 6:
+-			switch(cpu_id.model) {
+-			case 0:
+-			case 1:
+-				cprint(LINE_CPU, 0, "Pentium Pro");
+-				off = 11;
++		} else {
++			/* AL: if Intel CPU brand id (bl) is known -- use it */
++			switch(cpu_id.brand) {
++			case 0x01:
++			case 0x0A:
++				cprint(LINE_CPU, 0, "Celeron");
++				off = 7;
+ 				break;
+-			case 3:
+-				cprint(LINE_CPU, 0, "Pentium II");
+-				off = 10;
++			case 0x02:
++			case 0x04:
++				cprint(LINE_CPU, 0, "Pentium III");
++				off = 11;
+ 				break;
+-			case 5:
+-				if (l2_cache == 0) {
++			case 0x03:
++				if (cpu_id.type  == 6
++				 && cpu_id.model == 0xB
++				 && cpu_id.step  == 1) {
+ 					cprint(LINE_CPU, 0, "Celeron");
+ 					off = 7;
+ 				} else {
+-					cprint(LINE_CPU, 0, "Pentium II");
+-					off = 10;
++					cprint(LINE_CPU, 0, "Pentium III Xeon");
++					off = 16;
+ 				}
+ 				break;
+-			case 6:
+-				if (l2_cache == 128) {
+-					cprint(LINE_CPU, 0, "Celeron");
++			case 0x06:
++				cprint(LINE_CPU, 0, "Mobile Pentium III");
++				off = 18;
++				break;
++			case 0x07:
++			case 0x0F:
++			case 0x13:
++				cprint(LINE_CPU, 0, "Mobile Celeron");
++				off = 14;
++				break;
++			case 0x08:
++			case 0x09:
++				cprint(LINE_CPU, 0, "Pentium 4");
++				off = 9;
++				break;
++			case 0x0B:
++				if (cpu_id.type  == 0xF
++				 && cpu_id.model == 1
++				 && cpu_id.step  == 3) {
++					cprint(LINE_CPU, 0, "Xeon MP");
+ 					off = 7;
+ 				} else {
+-					cprint(LINE_CPU, 0, "Pentium II");
+-					off = 10;
++					cprint(LINE_CPU, 0, "Xeon");
++					off = 4;
+ 				}
+ 				break;
+-			case 7:
+-			case 8:
+-			case 10:
+-			case 11:
+-				cprint(LINE_CPU, 0, "Pentium III");
+-				off = 11;
++			case 0x0C:
++				cprint(LINE_CPU, 0, "Xeon MP");
++				off = 7;
++				break;
++			case 0x0E:
++				if (cpu_id.type  == 0xF
++				 && cpu_id.model == 1
++				 && cpu_id.step  == 3) {
++					cprint(LINE_CPU, 0, "Xeon");
++					off = 4;
++				} else {
++					cprint(LINE_CPU, 0, "Mobile Pentium 4");
++					off = 16;
++				}
++				break;
++			case 0x16:
++				cprint(LINE_CPU, 0, "Pentium M");
++				off = 9;
++				break;
++			/* AL: if unknown Intel CPU brand id -- drop to old code */
++			default:
++				if (cpu_id.type == 6) {
++					switch(cpu_id.model) {
++					case 0:
++					case 1:
++						cprint(LINE_CPU, 0, "Pentium Pro");
++						off = 11;
++						break;
++					case 3:
++						cprint(LINE_CPU, 0, "Pentium II");
++						off = 10;
++						break;
++					case 5:
++						if (l2_cache == 0) {
++							cprint(LINE_CPU, 0, "Celeron");
++							off = 7;
++						} else {
++							cprint(LINE_CPU, 0, "Pentium II");
++							off = 10;
++						}
++						break;
++					case 6:
++						if (l2_cache == 128) {
++							cprint(LINE_CPU, 0, "Celeron");
++							off = 7;
++						} else {
++							cprint(LINE_CPU, 0, "Pentium II");
++							off = 10;
++						}
++						break;
++					case 7:
++					case 8:
++					case 10:
++					case 11:
++						cprint(LINE_CPU, 0, "Pentium III");
++						off = 11;
++						break;
++					}
++				} else if (cpu_id.type == 15) {
++					cprint(LINE_CPU, 0, "Pentium 4");
++					off = 9;
++				}
+ 				break;
+ 			}
+-			break;
+-		case 15:
+-			cprint(LINE_CPU, 0, "Pentium 4");
+-			off = 9;
+ 		}
+ 		break;
+ 
+-	/* Cyrix Processors with CPUID */
++	/* Cyrix Processors with CPUID or VIA C3 Processors */
+ 	case 'C':
+-		switch(cpu_id.model) {
+-		case 0:
+-			cprint(LINE_CPU, 0, "Cyrix 6x86MX/MII");
+-			off = 16;
+-			break;
+-		case 4:
+-			cprint(LINE_CPU, 0, "Cyrix GXm");
+-			off = 9;
+-			break;
++		if (cpu_id.vend_id[1] == 'e') {
++			cprint(LINE_CPU, 0, "VIA C3");
++			off = 6;
++			l1_data = cpu_id.cache_info[3];
++			l1_code = cpu_id.cache_info[7];
++			l2_cache = (cpu_id.cache_info[11] << 8);
++			l2_cache += cpu_id.cache_info[10];
++		} else {
++			switch(cpu_id.model) {
++			case 0:
++				cprint(LINE_CPU, 0, "Cyrix 6x86MX/MII");
++				off = 16;
++				break;
++			case 4:
++				cprint(LINE_CPU, 0, "Cyrix GXm");
++				off = 9;
++				break;
++			}
++			return;
+ 		}
+-		return;
+ 		break;
+ 
+ 	/* Unknown processor */
+@@ -608,14 +711,24 @@
+ 		}
+ 	}
+ 
++	/* AL: Use half of L1 cache size for L1 code and L1 data size, */
++	/* AL: if they are not known, and set L1 cache size equal to sum */
++	/* AL: of the L1 code and L1 data in the opposite case */
++	if (l1_code == 0 && l1_data == 0) {
++		l1_code = l1_data = l1_cache / 2;
++	}
++	if (l1_cache == 0) {
++		l1_cache = l1_code + l1_data;
++	}
++
+ 	/* Print out L1 cache info */
+-	/* To measure L1 cache speed we use a block size that is 1/4th */
+-	/* of the total L1 cache size since half of it is for instructions */
++	/* To measure L1 cache speed we use a block size that is 1/2nd */
++	/* of the L1 data cache size -1k */
+ 	if (l1_cache) {
+ 		cprint(LINE_CPU+1, 9, "     K     ");
+ 		dprint(LINE_CPU+1, 10, l1_cache, 4, 0);
+-		if ((speed=memspeed((ulong)mapping(0x100),
+-				(l1_cache / 4) * 1024, 50))) {
++		if ((i = l1_data / 2))  i--;
++		if ((speed=memspeed((ulong)mapping(0x100), i*1024, 500))) {
+ 			cprint(LINE_CPU+1, 15, "      MB/s");
+ 			dprint(LINE_CPU+1, 15, speed, 6, 0);
+ 		}
+@@ -623,18 +736,23 @@
+ 
+ 	/* Print out L2 cache info */
+ 	/* We measure the L2 cache speed by using a block size that is */
+-	/* the size of the L1 cache.  We have to fudge if the L1 */
+-	/* cache is bigger than the L2 */
++	/* AL: 1/2nd of the L2 cache size -1k.  We have to fudge if the L1 */
++	/* data cache is bigger than the L2 */
+ 	if (l2_cache) {
++		/* AL: for exclusive L2 cache in VIA C3 */
++		int total2 = l2_cache;
++		if (cpu_id.vend_id[0] == 'C') {
++			total2 += l1_data;
++		}
+ 		cprint(LINE_CPU+2, 9, "     K     ");
+ 		cprint(LINE_CPU+2, 0, "L2 Cache    ?K");
+ 		dprint(LINE_CPU+2, 10, l2_cache, 4, 0);
+ 
+-		if (l2_cache < l1_cache) {
+-			i = l1_cache / 4 + l2_cache / 4;
+-		} else {
+-			i = l1_cache;
++		i = total2 / 2;
++		if (total2 < l1_data) {
++			i = l1_data / 4 + total2 / 4;
+ 		}
++		if (i)  i--;
+ 		if ((speed=memspeed((ulong)mapping(0x100), i*1024, 50))) {
+ 			cprint(LINE_CPU+2, 15, "      MB/s");
+ 			dprint(LINE_CPU+2, 15, speed, 6, 0);
+@@ -642,8 +760,12 @@
+ 	}
+ 
+ 	/* Determine memory speed.  To find the memory spped we use */
+-	/* A block size that is 5x the sum of the L1 and L2 caches */
+-	i = (l2_cache + l1_cache) * 5;
++	/* A block size that is 5x the sum of the L1 data and L2 caches */
++	/* AL: or 64 Kb, if sum ==0 */
++	i = (l2_cache + l1_data) * 5;
++	if (i == 0) {
++		i = 64;
++	}
+ 
+ 	/* Make sure that we have enough memory to do the test */
+ 	if ((1 + (i * 2)) > (v->plim_upper << 2)) {
+@@ -728,6 +850,10 @@
+ 	ulong wlen;
+ 	int i;
+ 
++	if (len == 0 || iter == 0) {
++		return 0;
++	}
++
+ 	dst = src + len;
+ 	wlen = len / 4;  /* Length is bytes */
+ 
+diff -Naur memtest86-3.0/test.h memtest86-3.0_my_amd/test.h
+--- memtest86-3.0/test.h	2002-05-21 21:06:16 +0000
++++ memtest86-3.0_my_amd/test.h	2003-10-24 14:31:38 +0000
+@@ -226,7 +226,7 @@
+ 	char type;
+ 	char model;
+ 	char step;
+-	char fill;
++	char brand;
+ 	long cpuid;
+ 	long capability;
+ 	char vend_id[12];

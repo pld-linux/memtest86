@@ -20,7 +20,7 @@ failures that are detected by Memtest86.
 %setup -q
 
 %build
-%{__make} CCFLAGS="%{%{rpmcflags}}" SHELL=/bin/bash
+%{__make} CCFLAGS="%{rpmcflags}" SHELL=/bin/bash
 
 %install
 rm -rf $RPM_BUILD_ROOT

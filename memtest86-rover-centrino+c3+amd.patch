@@ -1,38 +1,6 @@
-diff -Naur memtest86-3.0/head.S memtest86-3.0_my_amd/head.S
---- memtest86-3.0/head.S	2002-04-22 05:22:03 +0000
-+++ memtest86-3.0_my_amd/head.S	2003-10-24 14:31:38 +0000
-@@ -23,6 +23,7 @@
- #define X86		0
- #define X86_MODEL	1
- #define X86_MASK	2
-+#define X86_BRAND	3
- #define X86_CPUID	4
- #define X86_CAPABILITY	8
- #define X86_VENDOR_ID	12
-@@ -335,6 +336,7 @@
- 	movb	%al, X86_MODEL(%esi)
- 	andb	$0x0f, %cl		# mask mask revision
- 	movb	%cl, X86_MASK(%esi)
-+	movb	%bl, X86_BRAND(%esi)	# brand id -- used only for Intel CPU
- 	movl	%edx, X86_CAPABILITY(%esi)
- 
- 	movl	$0, X86_CACHE(%esi)
-@@ -356,8 +358,10 @@
- not_intel:
- 	movl	X86_VENDOR_ID+8(%esi),%eax
- 	cmpl	$0x444d4163, %eax	# Is this an AMD CPU?
-+	je	amd_viac3
-+	cmpl	$0x736c7561, %eax	# Is this an VIA C3 CPU?
- 	jne	not_amd
--
-+amd_viac3:
- 	movl	$0x80000005, %eax	# Use the CPUID instruction to get cache info 
- 	cpuid
- 	movl	%ecx, X86_CACHE(%esi)
-diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
---- memtest86-3.0/init.c	2002-05-21 22:52:37 +0000
-+++ memtest86-3.0_my_amd/init.c	2003-10-24 14:31:38 +0000
-@@ -257,6 +257,8 @@
+--- memtest86-3.1a/init.c	2004-03-11 17:57:45.000000000 +0100
++++ memtest86-3.1a.mod/init.c	2004-04-14 12:34:08.903695715 +0200
+@@ -256,6 +256,8 @@
  {
  	int i, off=0;
  	int l1_cache=0, l2_cache=0;
@@ -41,20 +9,20 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  	ulong speed;
  
  	v->rdtsc = 0;
-@@ -345,45 +347,53 @@
+@@ -344,30 +346,35 @@
  		case 5:
  			switch(cpu_id.model) {
  			case 0:
-+				cprint(LINE_CPU, 0, "AMD K5");
-+				off = 6;
-+				break;
++ 				cprint(LINE_CPU, 0, "AMD K5");
++ 				off = 6;
++ 				break;
  			case 1:
  			case 2:
  			case 3:
  				cprint(LINE_CPU, 0, "AMD K5");
  				off = 6;
-+				l1_data = cpu_id.cache_info[3];
-+				l1_code = cpu_id.cache_info[7];
++ 				l1_data = cpu_id.cache_info[3];
++ 				l1_code = cpu_id.cache_info[7];
  				break;
  			case 6:
  			case 7:
@@ -83,42 +51,18 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  				l2_cache = (cpu_id.cache_info[11] << 8);
  				l2_cache += cpu_id.cache_info[10];
  				break;
- 			}
+@@ -375,8 +382,8 @@
  			break;
  		case 6:
-+			l1_data = cpu_id.cache_info[3];
-+			l1_code = cpu_id.cache_info[7];
-+			l2_cache = (cpu_id.cache_info[11] << 8);
-+			l2_cache += cpu_id.cache_info[10];
- 			switch(cpu_id.model) {
- 			case 1:
- 			case 2:
- 			case 4:
- 			case 6:
-+			case 8:
- 				cprint(LINE_CPU, 0, "AMD Athlon");
- 				off = 10;
--				l2_cache = (cpu_id.cache_info[11] << 8);
--				l2_cache += cpu_id.cache_info[10];
- 				break;
- 			case 3:
- 			case 7:
-@@ -394,14 +404,9 @@
- 				if (cpu_id.step == 0) { /* stepping 0 */
- 					/* Hard code the right size */
- 					l2_cache = 64;
--				} else {
--					l2_cache = (cpu_id.cache_info[11] << 8);
--					l2_cache += cpu_id.cache_info[10];
- 				}
- 				break;
- 			}
+ 			/* Get L1 & L2 cache sizes */
 -			l1_cache = cpu_id.cache_info[3];
 -			l1_cache += cpu_id.cache_info[7];
- 		}
- 		break;
++			l1_data = cpu_id.cache_info[3];
++			l1_code = cpu_id.cache_info[7];
+ 			l2_cache = (cpu_id.cache_info[11] << 8);
+ 			l2_cache += cpu_id.cache_info[10];
  
-@@ -448,26 +453,40 @@
+@@ -473,26 +480,40 @@
  		}
  
  		/* Get the cache info */
@@ -164,7 +108,7 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  				break;
  			case 0x41:
  			case 0x79:
-@@ -481,22 +500,25 @@
+@@ -506,22 +527,25 @@
  			case 0x43:
  			case 0x7b:
  			case 0x83:
@@ -192,7 +136,7 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  			switch(cpu_id.model) {
  			case 0:
  			case 1:
-@@ -504,7 +526,7 @@
+@@ -529,7 +553,7 @@
  			case 3:
  			case 7:
  				cprint(LINE_CPU, 0, "Pentium");
@@ -201,7 +145,7 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  					l1_cache = 8;
  				}
  				off = 7;
-@@ -512,70 +534,151 @@
+@@ -537,70 +561,151 @@
  			case 4:
  			case 8:
  				cprint(LINE_CPU, 0, "Pentium-MMX");
@@ -394,7 +338,7 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  		break;
  
  	/* Unknown processor */
-@@ -608,14 +711,24 @@
+@@ -633,14 +738,24 @@
  		}
  	}
  
@@ -423,7 +367,7 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  			cprint(LINE_CPU+1, 15, "      MB/s");
  			dprint(LINE_CPU+1, 15, speed, 6, 0);
  		}
-@@ -623,18 +736,23 @@
+@@ -648,18 +763,23 @@
  
  	/* Print out L2 cache info */
  	/* We measure the L2 cache speed by using a block size that is */
@@ -453,7 +397,7 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  		if ((speed=memspeed((ulong)mapping(0x100), i*1024, 50))) {
  			cprint(LINE_CPU+2, 15, "      MB/s");
  			dprint(LINE_CPU+2, 15, speed, 6, 0);
-@@ -642,8 +760,12 @@
+@@ -667,8 +787,12 @@
  	}
  
  	/* Determine memory speed.  To find the memory spped we use */
@@ -468,7 +412,7 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  
  	/* Make sure that we have enough memory to do the test */
  	if ((1 + (i * 2)) > (v->plim_upper << 2)) {
-@@ -728,6 +850,10 @@
+@@ -772,6 +896,10 @@
  	ulong wlen;
  	int i;
  
@@ -479,15 +423,3 @@ diff -Naur memtest86-3.0/init.c memtest86-3.0_my_amd/init.c
  	dst = src + len;
  	wlen = len / 4;  /* Length is bytes */
  
-diff -Naur memtest86-3.0/test.h memtest86-3.0_my_amd/test.h
---- memtest86-3.0/test.h	2002-05-21 21:06:16 +0000
-+++ memtest86-3.0_my_amd/test.h	2003-10-24 14:31:38 +0000
-@@ -226,7 +226,7 @@
- 	char type;
- 	char model;
- 	char step;
--	char fill;
-+	char brand;
- 	long cpuid;
- 	long capability;
- 	char vend_id[12];

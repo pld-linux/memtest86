@@ -59,8 +59,8 @@ Memtest86 -- ретельний та самост╕йний тест пам'ят╕ для x86-систем. В╕н
 %prep
 %setup -q 
 #%patch0 -p1
-#%patch1 -p1
-#%patch2 -p1
+%patch1 -p1
+%patch2 -p1
 
 %build
 %{__make} \

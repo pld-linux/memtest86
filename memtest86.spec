@@ -1,8 +1,8 @@
 Summary:	A memory tester
 Summary(pl):	Tester pamiêci
 Name:		memtest86
-Version:	2.9
-Release:	2
+Version:	3.0
+Release:	1
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.teresaudio.com/%{name}/%{name}-%{version}.tar.gz
@@ -32,16 +32,14 @@ memtest86.
 %{__make} CC="%{__cc}" CCFLAGS="%{rpmcflags}" SHELL=/bin/bash
 
 %install
-rm -rf $RPM_BUILD_ROOT
+rm -rf 	$RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT/boot
 
 install memtest.bin $RPM_BUILD_ROOT/boot/memtest86
 
-gzip -9nf README
-
 %files
 %defattr(644,root,root,755)
-%doc *.gz
+%doc README
 /boot/memtest86
 
 %clean

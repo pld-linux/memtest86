@@ -3,7 +3,7 @@ Summary(pl):	Kompleksowy, niezale¿ny od OS tester pamiêci dla systemów i386
 Summary(pt_BR):	Testador de memória completo e independente para sistemas i386
 Name:		memtest86
 Version:	3.0
-Release:	1
+Release:	2
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz

@@ -26,7 +26,7 @@ failures that are detected by Memtest86.
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT/boot
 
-%{_install__} memtest.bin $RPM_BUILD_ROOT/boot/memtest86
+%{__install} memtest.bin $RPM_BUILD_ROOT/boot/memtest86
 
 gzip -9nf README
 

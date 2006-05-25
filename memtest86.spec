@@ -31,7 +31,7 @@ memtest86.
 Memtest86 И um testador de memСria independente (no sentido de que nЦo
 roda sob um sistema operacional) e completo para sistemas i386.
 
-%description -l ru_RU
+%description -l ru
 Memtest86 -- тщательный и самостоятельный тест памяти для x86-систем. Он может
 быть загружен или с жесткого диска при помощи LILO/GRUB, или с дискеты.
 
@@ -42,7 +42,7 @@ Memtest86 -- тщательный и самостоятельный тест памяти для x86-систем. Он может
 
 Также может использоваться для создания загрузочной тест-дискеты.
 
-%description -l uk_UA
+%description -l uk
 Memtest86 -- ретельний та самост╕йний тест пам'ят╕ для x86-систем. В╕н
 може бути завантажений як з жорсткого диску за допомогою LILO/GRUB, так
 ╕ з дискети.

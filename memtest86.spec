@@ -5,11 +5,12 @@ Summary(ru.UTF-8):	Тест памяти для x86-архитектуры
 Summary(uk.UTF-8):	Тест пам'яті для x86-архітектури
 Name:		memtest86
 Version:	3.2
-Release:	1
+Release:	2
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
 # Source0-md5:	46028d276c39c2eebe7759ba813f97df
+Source1:	%{name}.image
 Patch0:		%{name}-rover-centrino+c3+amd.patch
 Patch1:		%{name}-i686-ld.patch
 URL:		http://www.memtest86.com/
@@ -55,8 +56,21 @@ Memtest86 -- ретельний та самостійний тест пам'ят
 Також може використовуватися для створення завантажувальної
 тест-дискети.
 
+%package -n rc-boot-image-memtest86
+Summary:	memtest86 image for rc-boot
+Summary(pl.UTF-8):	Obraz memtest86 dla rc-boot
+Group:		Base
+Requires:	%{name} = %{version}-%{release}
+Requires:	rc-boot
+
+%description -n rc-boot-image-memtest86
+memtest86 image for rc-boot.
+
+%description -n rc-boot-image-memtest86 -l pl.UTF-8
+Obraz memtest86 dla rc-boot.
+
 %prep
-%setup -q 
+%setup -q
 %patch0 -p1
 %patch1 -p1
 
@@ -68,14 +82,27 @@ Memtest86 -- ретельний та самостійний тест пам'ят
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT/boot
 
-install memtest.bin $RPM_BUILD_ROOT/boot/memtest86
+install -d $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images
+install %{SOURCE1} $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images/%{name}
+
+install -d $RPM_BUILD_ROOT/boot
+install memtest.bin $RPM_BUILD_ROOT/boot/%{name}.vmlinuz
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%postun -n rc-boot-image-memtest86
+/sbin/rc-boot 1>&2 || :
+
+%post -n rc-boot-image-memtest86
+/sbin/rc-boot 1>&2 || :
+
 %files
 %defattr(644,root,root,755)
 %doc README
-/boot/memtest86
+/boot/%{name}.vmlinuz
+
+%files -n rc-boot-image-memtest86
+%defattr(644,root,root,755)
+%attr(600,root,root) %config(noreplace) %verify(not md5 mtime size) /etc/sysconfig/rc-boot/images/%{name}

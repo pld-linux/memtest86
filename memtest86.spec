@@ -1,3 +1,7 @@
+#
+# Conditional build:
+%bcond_with	serial_console	# enable serial console support
+#
 Summary:	Thorough, stand alone memory test for i386 systems
 Summary(pl.UTF-8):	Kompleksowy, niezależny od OS tester pamięci dla systemów i386
 Summary(pt_BR.UTF-8):	Testador de memória completo e independente para sistemas i386
@@ -5,7 +9,7 @@ Summary(ru.UTF-8):	Тест памяти для x86-архитектуры
 Summary(uk.UTF-8):	Тест пам'яті для x86-архітектури
 Name:		memtest86
 Version:	3.2
-Release:	2
+Release:	3
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
@@ -13,6 +17,7 @@ Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
 Source1:	%{name}.image
 Patch0:		%{name}-rover-centrino+c3+amd.patch
 Patch1:		%{name}-i686-ld.patch
+Patch2:		%{name}-enable_serial_console.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -73,6 +78,7 @@ Obraz memtest86 dla rc-boot.
 %setup -q
 %patch0 -p1
 %patch1 -p1
+%{?with_serial_console:%patch2 -p1}
 
 %build
 %{__make} \

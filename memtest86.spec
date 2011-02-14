@@ -9,7 +9,7 @@ Summary(ru.UTF-8):	Тест памяти для x86-архитектуры
 Summary(uk.UTF-8):	Тест пам'яті для x86-архітектури
 Name:		memtest86
 Version:	3.2
-Release:	3
+Release:	4
 License:	GPL
 Group:		Applications/System
 Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz

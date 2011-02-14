@@ -1,7 +1,7 @@
 #
 # Conditional build:
 %bcond_with	serial_console	# enable serial console support
-#
+
 Summary:	Thorough, stand alone memory test for i386 systems
 Summary(pl.UTF-8):	Kompleksowy, niezależny od OS tester pamięci dla systemów i386
 Summary(pt_BR.UTF-8):	Testador de memória completo e independente para sistemas i386
@@ -38,20 +38,21 @@ Memtest86 é um testador de memória independente (no sentido de que não
 roda sob um sistema operacional) e completo para sistemas i386.
 
 %description -l ru.UTF-8
-Memtest86 -- тщательный и самостоятельный тест памяти для x86-систем. Он может
-быть загружен или с жесткого диска при помощи LILO/GRUB, или с дискеты.
+Memtest86 -- тщательный и самостоятельный тест памяти для x86-систем.
+Он может быть загружен или с жесткого диска при помощи LILO/GRUB, или
+с дискеты.
 
-Тест использует алгоритм "движущихся инверсий", доказавший свою эффективность
-при обнаружении сбоев памяти. Не обращайте внимания на "тест" BIOS -- он
-практически ничего не значит, так как пропустит много ошибок из тех, которые
-обнаружит memtest86.
+Тест использует алгоритм "движущихся инверсий", доказавший свою
+эффективность при обнаружении сбоев памяти. Не обращайте внимания на
+"тест" BIOS -- он практически ничего не значит, так как пропустит
+много ошибок из тех, которые обнаружит memtest86.
 
 Также может использоваться для создания загрузочной тест-дискеты.
 
 %description -l uk.UTF-8
 Memtest86 -- ретельний та самостійний тест пам'яті для x86-систем. Він
-може бути завантажений як з жорсткого диску за допомогою LILO/GRUB, так
-і з дискети.
+може бути завантажений як з жорсткого диску за допомогою LILO/GRUB,
+так і з дискети.
 
 Тест використовує алгоритм "рухаючихся інверсій", який довів свою
 ефективність при визначенні негараздів із пам'яттю. Не звертайте уваги
@@ -99,9 +100,15 @@ install memtest.bin $RPM_BUILD_ROOT/boot/%{name}
 rm -rf $RPM_BUILD_ROOT
 
 %postun -n rc-boot-image-memtest86
+if [ -x /sbin/grubby ]; then
+	/sbin/grubby --add-kernel=/boot/%{name} --title="Memtest86+ %{version}" --remove-kernel="TITLE=Memtest86+ %{version}"
+fi
 /sbin/rc-boot 1>&2 || :
 
 %post -n rc-boot-image-memtest86
+if [ "$1" = 0 ] && [ -x /sbin/grubby ]; then
+	/sbin/grubby --remove-kernel=/boot/%{name}
+fi
 /sbin/rc-boot 1>&2 || :
 
 %files

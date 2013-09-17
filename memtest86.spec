@@ -8,18 +8,19 @@ Summary(pt_BR.UTF-8):	Testador de memória completo e independente para sistemas
 Summary(ru.UTF-8):	Тест памяти для x86-архитектуры
 Summary(uk.UTF-8):	Тест пам'яті для x86-архітектури
 Name:		memtest86
-Version:	3.2
-Release:	4
+Version:	4.3.3
+Release:	1
 License:	GPL
 Group:		Applications/System
-Source0:	http://www.memtest86.com/%{name}-%{version}.tar.gz
-# Source0-md5:	46028d276c39c2eebe7759ba813f97df
+Source0:	http://www.memtest86.com/downloads/%{name}-iso.gz
+# Source0-md5:	7d86f56656218f6ce4a7ec0d69d88517
 Source1:	%{name}.image
 Patch0:		%{name}-rover-centrino+c3+amd.patch
 Patch1:		%{name}-i686-ld.patch
 Patch2:		%{name}-enable_serial_console.patch
 URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
+BuildRequires:	p7zip
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
@@ -76,13 +77,16 @@ memtest86 image for rc-boot.
 Obraz memtest86 dla rc-boot.
 
 %prep
-%setup -q
-%patch0 -p1
-%patch1 -p1
+%setup -q -c
+gzip -dc %{SOURCE0} > memtest86-iso
+7z e memtest86-iso
+tar xf SRC.TGZ
+#%patch0 -p1
+#%patch1 -p1
 %{?with_serial_console:%patch2 -p1}
 
 %build
-%{__make} \
+%{__make} -C src \
 	CC="%{__cc}" \
 	CCFLAGS="%{rpmcflags} -fomit-frame-pointer -fno-builtin" \
 	SHELL=/bin/sh
@@ -94,7 +98,7 @@ install -d $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images
 install %{SOURCE1} $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images/%{name}
 
 install -d $RPM_BUILD_ROOT/boot
-install memtest.bin $RPM_BUILD_ROOT/boot/%{name}
+install src/memtest.bin $RPM_BUILD_ROOT/boot/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -113,7 +117,7 @@ fi
 
 %files
 %defattr(644,root,root,755)
-%doc README
+%doc GUIDE.PDF src/README
 /boot/%{name}
 
 %files -n rc-boot-image-memtest86

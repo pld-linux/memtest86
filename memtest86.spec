@@ -78,7 +78,6 @@ Obraz memtest86 dla rc-boot.
 
 %prep
 %setup -q -c
-7z e %{SOURCE0}
 7z e Memtest86-%{version}.iso
 tar xf SRC.TGZ
 #%patch0 -p1

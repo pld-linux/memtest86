@@ -93,13 +93,13 @@ tar xf SRC.TGZ
 
 %install
 rm -rf $RPM_BUILD_ROOT
+install -d $RPM_BUILD_ROOT/boot
+
+#install src/memtest.bin $RPM_BUILD_ROOT/boot/%{name}
+cp -p MEMTEST $RPM_BUILD_ROOT/boot/%{name}
 
 install -d $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images
-install %{SOURCE1} $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images/%{name}
-
-install -d $RPM_BUILD_ROOT/boot
-#install src/memtest.bin $RPM_BUILD_ROOT/boot/%{name}
-install MEMTEST $RPM_BUILD_ROOT/boot/%{name}
+cp -p %{SOURCE1} $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT

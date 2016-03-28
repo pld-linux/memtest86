@@ -1,6 +1,8 @@
 #
 # Conditional build:
-%bcond_with	serial_console	# enable serial console support
+%bcond_with	serial_console	# enable serial console BY DEFAULT
+#		This is normally off since it slows down testing
+#		Instead, one can just append console=ttyS0,9600
 
 Summary:	Thorough, stand alone memory test for i386 systems
 Summary(pl.UTF-8):	Kompleksowy, niezależny od OS tester pamięci dla systemów i386
@@ -85,10 +87,9 @@ tar xf SRC.TGZ
 %{?with_serial_console:%patch2 -p1}
 
 %build
-%{__make} -C src \
-	CC="%{__cc}" \
-	CCFLAGS="%{rpmcflags} -fomit-frame-pointer -fno-builtin" \
-	SHELL=/bin/sh
+# 1. DO NOT mess with CFLAGS or any other compiler magic, the autor knows better: README.build-process
+# 2. actually, until ELF version is needed (for systems short on low-memory), use zImage provided
+#%%{__make} -C src
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -97,7 +98,8 @@ install -d $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images
 install %{SOURCE1} $RPM_BUILD_ROOT/etc/sysconfig/rc-boot/images/%{name}
 
 install -d $RPM_BUILD_ROOT/boot
-install src/memtest.bin $RPM_BUILD_ROOT/boot/%{name}
+#install src/memtest.bin $RPM_BUILD_ROOT/boot/%{name}
+install MEMTEST $RPM_BUILD_ROOT/boot/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -116,7 +118,7 @@ fi
 
 %files
 %defattr(644,root,root,755)
-%doc GUIDE.PDF src/README
+%doc GUIDE.PDF src/README*
 /boot/%{name}
 
 %files -n rc-boot-image-memtest86

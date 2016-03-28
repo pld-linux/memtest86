@@ -8,12 +8,12 @@ Summary(pt_BR.UTF-8):	Testador de memória completo e independente para sistemas
 Summary(ru.UTF-8):	Тест памяти для x86-архитектуры
 Summary(uk.UTF-8):	Тест пам'яті для x86-архітектури
 Name:		memtest86
-Version:	4.3.3
+Version:	4.3.7
 Release:	1
-License:	GPL
+License:	GPL v2
 Group:		Applications/System
-Source0:	http://www.memtest86.com/downloads/%{name}-iso.gz
-# Source0-md5:	7d86f56656218f6ce4a7ec0d69d88517
+Source0:	http://www.memtest86.com/downloads/%{name}-%{version}-iso.zip
+# Source0-md5:	d19d7c8ba5d044e0ea88d8fbe61ace48
 Source1:	%{name}.image
 Patch0:		%{name}-rover-centrino+c3+amd.patch
 Patch1:		%{name}-i686-ld.patch
@@ -78,8 +78,8 @@ Obraz memtest86 dla rc-boot.
 
 %prep
 %setup -q -c
-gzip -dc %{SOURCE0} > memtest86-iso
-7z e memtest86-iso
+7z e %{SOURCE0}
+7z e Memtest86-%{version}.iso
 tar xf SRC.TGZ
 #%patch0 -p1
 #%patch1 -p1

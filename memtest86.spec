@@ -11,7 +11,7 @@ Summary(ru.UTF-8):	Тест памяти для x86-архитектуры
 Summary(uk.UTF-8):	Тест пам'яті для x86-архітектури
 Name:		memtest86
 Version:	4.3.7
-Release:	1
+Release:	2
 License:	GPL v2
 Group:		Applications/System
 Source0:	http://www.memtest86.com/downloads/%{name}-%{version}-iso.zip
@@ -24,6 +24,8 @@ URL:		http://www.memtest86.com/
 ExclusiveArch:	%{ix86}
 BuildRequires:	p7zip
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
+
+%undefine _debugsource_packages
 
 %description
 Memtest86 is thorough, stand alone memory test for i386 architecture
